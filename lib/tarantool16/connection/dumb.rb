@@ -1,4 +1,5 @@
 require 'socket'
+require 'thread'
 require 'io/wait'
 begin
   #require 'kgio'
@@ -15,10 +16,12 @@ module Tarantool16
         _init_common(host, opts)
         @reconnect_time = now_f - 1
         @socket = nil
+        @thread = @req_queue = @res_queue = nil
         _connect
       end
 
       def send_request(code, body, cb)
+        raise "Could not send_request directly while in 'multi' block" if @thread
         _connect
         syswrite format_request(code, next_sync, body)
         written = true
@@ -60,6 +63,20 @@ module Tarantool16
 
       def could_be_connected?
         @socket || (@socket.nil? && (@reconnect || @reconnect_time < now_f))
+      end
+
+      def _multi
+        @req_queue = Queue.new
+        @res_queue = Queue.new
+        @thread = Thread.new do
+          _multi_read_loop
+        end
+      end
+
+      def _send_request_async(code, body, cb)
+        unless connected?
+
+        end
       end
 
     private

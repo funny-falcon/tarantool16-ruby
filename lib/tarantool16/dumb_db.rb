@@ -73,6 +73,8 @@ module Tarantool16
 
     def _norm_key(key)
       case key
+      when nil
+        []
       when Array
         key
       when Hash
